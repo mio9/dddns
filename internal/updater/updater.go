@@ -90,7 +90,7 @@ func editRecordBody(recordType string, ip string) dns.RecordEditParamsBodyUnion 
 }
 
 func Update(ctx context.Context, cfg *config.Config) error {
-	publicIP, err := getPublicIP(ctx, cfg.IP.URL)
+	publicIP, err := getPublicIP(ctx, cfg.IPProvider.URL)
 	if err != nil {
 		return err
 	}

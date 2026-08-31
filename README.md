@@ -53,7 +53,7 @@ record:
   name: "home.example.com"
   type: "A"   # optional, defaults to A
 
-ip:
+ip-provider:
   url: "https://api.ipify.org"  # optional
 ```
 
@@ -66,7 +66,7 @@ ip:
 | `record.name` | yes** | Full DNS record name (e.g. `home.example.com`) |
 | `record.id` | yes** | Cloudflare DNS record ID (alternative to `record.name`) |
 | `record.type` | no | Record type to match when using `record.name`. Default: `A`. Use `AAAA` for IPv6 |
-| `ip.url` | no | URL that returns your public IP as plain text. Default: `https://api.ipify.org` |
+| `ip-provider.url` | no | URL that returns your public IP as plain text. Default: `https://api.ipify.org` |
 
 \* Either set `cloudflare.api_token` in the config file or export the `CLOUDFLARE_API_TOKEN` environment variable.
 

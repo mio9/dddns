@@ -19,9 +19,9 @@ type Config struct {
 		Name string `yaml:"name"`
 		Type string `yaml:"type"`
 	} `yaml:"record"`
-	IP struct {
+	IPProvider struct {
 		URL string `yaml:"url"`
-	} `yaml:"ip"`
+	} `yaml:"ip-provider"`
 }
 
 func Load(path string) (*Config, error) {
@@ -50,8 +50,8 @@ func Load(path string) (*Config, error) {
 	if cfg.Cloudflare.APIToken == "" {
 		return nil, fmt.Errorf("cloudflare.api_token or CLOUDFLARE_API_TOKEN env var is required")
 	}
-	if cfg.IP.URL == "" {
-		cfg.IP.URL = defaultIPCheckURL
+	if cfg.IPProvider.URL == "" {
+		cfg.IPProvider.URL = defaultIPCheckURL
 	}
 
 	return &cfg, nil
