@@ -1,17 +1,20 @@
 # dddns
 
-Small CLI that keeps Cloudflare DNS records in sync with your current public IP. Useful for home servers, NAS devices, or any host behind a dynamic IP.
+Small CLI that keeps DNS records in sync with your current public IP. Useful for home servers, NAS devices, or any host behind a dynamic IP.
 
 ## Requirements
 
 - Go 1.26 or later (to build from source)
-- A Cloudflare account with a zone and DNS record to update
-- A Cloudflare API token with permission to edit DNS records in that zone
+- A supported DNS provider account with records to update
+
+## Supported providers
+
+- **Cloudflare** — update existing DNS records via API token
 
 ## Build
 
 ```bash
-go build -o dddns ./cmd/dddns
+go build -o dddns .
 ```
 
 Or:
@@ -45,48 +48,50 @@ unchanged: home.example.com already points to 203.0.113.42
 Create a YAML file and pass it with `--config` / `-c`.
 
 ```yaml
-cloudflare:
-  zone_id: "your-zone-id"
-  # api_token: "your-api-token"  # optional if CLOUDFLARE_API_TOKEN is set
-
-records:
-  - name: "home.example.com"
-    type: "A"   # optional, defaults to A
-  - name: "vpn.example.com"
-
 ip-provider:
   url: "https://api.ipify.org"  # optional
+
+providers:
+  - type: cloudflare
+    zone_id: "your-zone-id"
+    # api_token: "your-api-token"  # optional if CLOUDFLARE_API_TOKEN is set
+    records:
+      - name: "home.example.com"
+        type: "A"   # optional, defaults to A
+      - name: "vpn.example.com"
 ```
 
 ### Config reference
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `cloudflare.zone_id` | yes | Cloudflare zone ID for the domain |
-| `cloudflare.api_token` | yes* | API token with DNS edit access for the zone |
-| `records` | yes | List of DNS records to update |
-| `records[].name` | yes** | Full DNS record name (e.g. `home.example.com`) |
-| `records[].id` | yes** | Cloudflare DNS record ID (alternative to `records[].name`) |
-| `records[].type` | no | Record type to match when using `records[].name`. Default: `A`. Use `AAAA` for IPv6 |
 | `ip-provider.url` | no | URL that returns your public IP as plain text. Default: `https://api.ipify.org` |
+| `providers` | yes | List of DNS provider configurations |
+| `providers[].type` | yes | Provider name. Supported: `cloudflare` |
+| `providers[].zone_id` | yes* | Cloudflare zone ID |
+| `providers[].api_token` | yes* | Cloudflare API token with DNS edit access |
+| `providers[].records` | yes* | DNS records to update for this provider |
+| `providers[].records[].name` | yes** | Full DNS record name (e.g. `home.example.com`) |
+| `providers[].records[].id` | yes** | Cloudflare DNS record ID (alternative to `name`) |
+| `providers[].records[].type` | no | Record type when using `name`. Default: `A`. Use `AAAA` for IPv6 |
 
-\* Either set `cloudflare.api_token` in the config file or export the `CLOUDFLARE_API_TOKEN` environment variable.
+\* Required for `cloudflare` providers.
 
-\** Each record needs `records[].id` **or** `records[].name` (with optional `records[].type`). If you use `records[].name`, the record must exist already in Cloudflare.
+\** Each record needs `id` **or** `name` (with optional `type`). Named records must already exist in the provider.
+
+Public IP is fetched once per run and applied to all configured records across all providers.
 
 ### Example with record ID
 
-If you already know the DNS record ID, you can skip the name lookup:
-
 ```yaml
-cloudflare:
-  zone_id: "your-zone-id"
-
-records:
-  - id: "dns-record-id"
+providers:
+  - type: cloudflare
+    zone_id: "your-zone-id"
+    records:
+      - id: "dns-record-id"
 ```
 
-### API token
+### Cloudflare API token
 
 Create a token in the [Cloudflare dashboard](https://dash.cloudflare.com/profile/api-tokens) with **Edit DNS** permission scoped to the target zone.
 
@@ -110,4 +115,4 @@ Example cron entry (every 5 minutes):
 ## Exit codes
 
 - `0` — success (updated or unchanged)
-- `1` — error (config, network, or Cloudflare API failure)
+- `1` — error (config, network, or provider API failure)

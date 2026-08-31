@@ -16,7 +16,7 @@ var Version string = "indev"
 func main() {
 	command := &cli.Command{
 		Name:  "dddns",
-		Usage: "DDNS for Cloudflare",
+		Usage: "Dynamic DNS updater",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "config",
