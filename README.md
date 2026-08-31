@@ -1,6 +1,6 @@
 # dddns
 
-Small CLI that keeps a Cloudflare DNS record in sync with your current public IP. Useful for home servers, NAS devices, or any host behind a dynamic IP.
+Small CLI that keeps Cloudflare DNS records in sync with your current public IP. Useful for home servers, NAS devices, or any host behind a dynamic IP.
 
 ## Requirements
 
@@ -49,9 +49,10 @@ cloudflare:
   zone_id: "your-zone-id"
   # api_token: "your-api-token"  # optional if CLOUDFLARE_API_TOKEN is set
 
-record:
-  name: "home.example.com"
-  type: "A"   # optional, defaults to A
+records:
+  - name: "home.example.com"
+    type: "A"   # optional, defaults to A
+  - name: "vpn.example.com"
 
 ip-provider:
   url: "https://api.ipify.org"  # optional
@@ -63,14 +64,15 @@ ip-provider:
 |-------|----------|-------------|
 | `cloudflare.zone_id` | yes | Cloudflare zone ID for the domain |
 | `cloudflare.api_token` | yes* | API token with DNS edit access for the zone |
-| `record.name` | yes** | Full DNS record name (e.g. `home.example.com`) |
-| `record.id` | yes** | Cloudflare DNS record ID (alternative to `record.name`) |
-| `record.type` | no | Record type to match when using `record.name`. Default: `A`. Use `AAAA` for IPv6 |
+| `records` | yes | List of DNS records to update |
+| `records[].name` | yes** | Full DNS record name (e.g. `home.example.com`) |
+| `records[].id` | yes** | Cloudflare DNS record ID (alternative to `records[].name`) |
+| `records[].type` | no | Record type to match when using `records[].name`. Default: `A`. Use `AAAA` for IPv6 |
 | `ip-provider.url` | no | URL that returns your public IP as plain text. Default: `https://api.ipify.org` |
 
 \* Either set `cloudflare.api_token` in the config file or export the `CLOUDFLARE_API_TOKEN` environment variable.
 
-\** Provide `record.id` **or** `record.name` (with optional `record.type`). If you use `record.name`, the record must exist already in Cloudflare.
+\** Each record needs `records[].id` **or** `records[].name` (with optional `records[].type`). If you use `records[].name`, the record must exist already in Cloudflare.
 
 ### Example with record ID
 
@@ -80,8 +82,8 @@ If you already know the DNS record ID, you can skip the name lookup:
 cloudflare:
   zone_id: "your-zone-id"
 
-record:
-  id: "dns-record-id"
+records:
+  - id: "dns-record-id"
 ```
 
 ### API token

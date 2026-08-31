@@ -2,6 +2,7 @@ package updater
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,22 +44,22 @@ func getPublicIP(ctx context.Context, checkURL string) (string, error) {
 	return ip, nil
 }
 
-func findRecord(ctx context.Context, client *cloudflare.Client, cfg *config.Config) (*dns.RecordResponse, error) {
-	if cfg.Record.ID != "" {
-		record, err := client.DNS.Records.Get(ctx, cfg.Record.ID, dns.RecordGetParams{
-			ZoneID: cloudflare.F(cfg.Cloudflare.ZoneID),
+func findRecord(ctx context.Context, client *cloudflare.Client, zoneID string, record config.Record) (*dns.RecordResponse, error) {
+	if record.ID != "" {
+		found, err := client.DNS.Records.Get(ctx, record.ID, dns.RecordGetParams{
+			ZoneID: cloudflare.F(zoneID),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("get DNS record: %w", err)
 		}
-		return record, nil
+		return found, nil
 	}
 
-	recordType := dns.RecordListParamsType(cfg.Record.Type)
+	recordType := dns.RecordListParamsType(record.Type)
 	records, err := client.DNS.Records.List(ctx, dns.RecordListParams{
-		ZoneID: cloudflare.F(cfg.Cloudflare.ZoneID),
+		ZoneID: cloudflare.F(zoneID),
 		Name: cloudflare.F(dns.RecordListParamsName{
-			Exact: cloudflare.F(cfg.Record.Name),
+			Exact: cloudflare.F(record.Name),
 		}),
 		Type: cloudflare.F(recordType),
 	})
@@ -67,10 +68,10 @@ func findRecord(ctx context.Context, client *cloudflare.Client, cfg *config.Conf
 	}
 
 	if len(records.Result) == 0 {
-		return nil, fmt.Errorf("no %s record found for %q", cfg.Record.Type, cfg.Record.Name)
+		return nil, fmt.Errorf("no %s record found for %q", record.Type, record.Name)
 	}
 	if len(records.Result) > 1 {
-		return nil, fmt.Errorf("multiple %s records found for %q", cfg.Record.Type, cfg.Record.Name)
+		return nil, fmt.Errorf("multiple %s records found for %q", record.Type, record.Name)
 	}
 
 	return &records.Result[0], nil
@@ -89,6 +90,29 @@ func editRecordBody(recordType string, ip string) dns.RecordEditParamsBodyUnion 
 	}
 }
 
+func updateRecord(ctx context.Context, client *cloudflare.Client, zoneID string, record config.Record, publicIP string) error {
+	found, err := findRecord(ctx, client, zoneID, record)
+	if err != nil {
+		return err
+	}
+
+	if found.Content == publicIP {
+		fmt.Printf("unchanged: %s already points to %s\n", found.Name, publicIP)
+		return nil
+	}
+
+	updated, err := client.DNS.Records.Edit(ctx, found.ID, dns.RecordEditParams{
+		ZoneID: cloudflare.F(zoneID),
+		Body:   editRecordBody(string(found.Type), publicIP),
+	})
+	if err != nil {
+		return fmt.Errorf("update DNS record: %w", err)
+	}
+
+	fmt.Printf("updated: %s %s -> %s\n", updated.Name, found.Content, updated.Content)
+	return nil
+}
+
 func Update(ctx context.Context, cfg *config.Config) error {
 	publicIP, err := getPublicIP(ctx, cfg.IPProvider.URL)
 	if err != nil {
@@ -99,24 +123,12 @@ func Update(ctx context.Context, cfg *config.Config) error {
 		option.WithAPIToken(cfg.Cloudflare.APIToken),
 	)
 
-	record, err := findRecord(ctx, client, cfg)
-	if err != nil {
-		return err
+	var updateErrors []error
+	for _, record := range cfg.Records {
+		if err := updateRecord(ctx, client, cfg.Cloudflare.ZoneID, record, publicIP); err != nil {
+			updateErrors = append(updateErrors, err)
+		}
 	}
 
-	if record.Content == publicIP {
-		fmt.Printf("unchanged: %s already points to %s\n", record.Name, publicIP)
-		return nil
-	}
-
-	updated, err := client.DNS.Records.Edit(ctx, record.ID, dns.RecordEditParams{
-		ZoneID: cloudflare.F(cfg.Cloudflare.ZoneID),
-		Body:   editRecordBody(cfg.Record.Type, publicIP),
-	})
-	if err != nil {
-		return fmt.Errorf("update DNS record: %w", err)
-	}
-
-	fmt.Printf("updated: %s %s -> %s\n", updated.Name, record.Content, updated.Content)
-	return nil
+	return errors.Join(updateErrors...)
 }
