@@ -18,6 +18,11 @@ type Provider struct {
 	records []config.Record
 }
 
+type pendingUpdate struct {
+	found    *dns.RecordResponse
+	publicIP string
+}
+
 func New(cfg config.Provider) (*Provider, error) {
 	return &Provider{
 		client: cloudflare.NewClient(
@@ -29,13 +34,53 @@ func New(cfg config.Provider) (*Provider, error) {
 }
 
 func (provider *Provider) Update(ctx context.Context, publicIP string) error {
-	var updateErrors []error
+	var findErrors []error
+	var patches []dns.BatchPatchUnionParam
+	var pendingUpdates []pendingUpdate
+
 	for _, record := range provider.records {
-		if err := provider.updateRecord(ctx, record, publicIP); err != nil {
-			updateErrors = append(updateErrors, err)
+		found, err := provider.findRecord(ctx, record)
+		if err != nil {
+			findErrors = append(findErrors, err)
+			continue
 		}
+
+		if found.Content == publicIP {
+			fmt.Printf("unchanged: %s already points to %s\n", found.Name, publicIP)
+			continue
+		}
+
+		patch, err := batchPatchForRecord(found, publicIP)
+		if err != nil {
+			findErrors = append(findErrors, err)
+			continue
+		}
+
+		patches = append(patches, patch)
+		pendingUpdates = append(pendingUpdates, pendingUpdate{
+			found:    found,
+			publicIP: publicIP,
+		})
 	}
-	return errors.Join(updateErrors...)
+
+	if len(patches) == 0 {
+		return errors.Join(findErrors...)
+	}
+
+	_, err := provider.client.DNS.Records.Batch(ctx, dns.RecordBatchParams{
+		ZoneID:  cloudflare.F(provider.zoneID),
+		Patches: cloudflare.F(patches),
+	})
+	if err != nil {
+		findErrors = append(findErrors, fmt.Errorf("batch update DNS records: %w", err))
+		return errors.Join(findErrors...)
+	}
+
+	for _, update := range pendingUpdates {
+		fmt.Printf("updated: %s %s -> %s\n", update.found.Name, update.found.Content, update.publicIP)
+	}
+
+	return errors.Join(findErrors...)
 }
 
 func (provider *Provider) findRecord(ctx context.Context, record config.Record) (*dns.RecordResponse, error) {
@@ -71,38 +116,23 @@ func (provider *Provider) findRecord(ctx context.Context, record config.Record) 
 	return &records.Result[0], nil
 }
 
-func editRecordBody(recordType string, ip string) dns.RecordEditParamsBodyUnion {
-	switch recordType {
+func batchPatchForRecord(found *dns.RecordResponse, publicIP string) (dns.BatchPatchUnionParam, error) {
+	switch string(found.Type) {
 	case "AAAA":
-		return dns.AAAARecordParam{
-			Content: cloudflare.F(ip),
-		}
+		return dns.BatchPatchAAAARecordParam{
+			ID: cloudflare.F(found.ID),
+			AAAARecordParam: dns.AAAARecordParam{
+				Content: cloudflare.F(publicIP),
+			},
+		}, nil
+	case "A":
+		return dns.BatchPatchARecordParam{
+			ID: cloudflare.F(found.ID),
+			ARecordParam: dns.ARecordParam{
+				Content: cloudflare.F(publicIP),
+			},
+		}, nil
 	default:
-		return dns.ARecordParam{
-			Content: cloudflare.F(ip),
-		}
+		return nil, fmt.Errorf("unsupported record type %q for %s", found.Type, found.Name)
 	}
-}
-
-func (provider *Provider) updateRecord(ctx context.Context, record config.Record, publicIP string) error {
-	found, err := provider.findRecord(ctx, record)
-	if err != nil {
-		return err
-	}
-
-	if found.Content == publicIP {
-		fmt.Printf("unchanged: %s already points to %s\n", found.Name, publicIP)
-		return nil
-	}
-
-	updated, err := provider.client.DNS.Records.Edit(ctx, found.ID, dns.RecordEditParams{
-		ZoneID: cloudflare.F(provider.zoneID),
-		Body:   editRecordBody(string(found.Type), publicIP),
-	})
-	if err != nil {
-		return fmt.Errorf("update DNS record: %w", err)
-	}
-
-	fmt.Printf("updated: %s %s -> %s\n", updated.Name, found.Content, updated.Content)
-	return nil
 }
