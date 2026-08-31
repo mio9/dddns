@@ -14,6 +14,7 @@ Any integratable DNS service as Dynamic DNS service.
 
 - **Cloudflare** — update existing DNS records via API token and official Cloudflare Go client.
 - **No-IP** — update existing DNS records via the [No-IP REST API](https://developer.noip.com/docs/getting-started-with-the-no-ip-api)
+- (Suggest more services to support by creating an issue or make a PR!)
 
 ## Installation
 
