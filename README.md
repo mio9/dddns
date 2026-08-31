@@ -1,5 +1,8 @@
 # dddns
 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/mio9/dddns/release.yml)
+![](banner.jpg)
+
 DD(どこでも)DDNS => DDDNS
 
 Any integratable DNS service as Dynamic DNS service.
@@ -7,8 +10,8 @@ Any integratable DNS service as Dynamic DNS service.
 
 ## Requirements
 
-- Go 1.26 or later (to build from source)
 - A supported DNS provider account with records to update
+- Go 1.26 or later (to build from source and develop locally)
 
 ## Currently Supported providers
 
@@ -21,7 +24,7 @@ Any integratable DNS service as Dynamic DNS service.
 ### Homebrew
 
 ```bash
-# Not yet released
+brew tap mio9/tap
 brew install mio9/tap/dddns
 ```
 
@@ -29,6 +32,8 @@ brew install mio9/tap/dddns
 
 ```bash
 curl -LsSf https://github.com/mio9/dddns/releases/latest/download/dddns-linux-amd64.tar.gz | tar -xzf -
+chmod +x dddns
+sudo mv dddns /usr/local/bin/ # Optional, if you want to install it globally, move to $PATH instead if you wanted to
 ```
 
 ## Usage
@@ -39,17 +44,6 @@ dddns --config /path/to/config.yaml
 dddns -c /path/to/config.yaml
 ```
 
-### Example output
-
-```
-updated: home.example.com 203.0.113.10 -> 203.0.113.42
-```
-
-When the IP is already correct:
-
-```
-unchanged: home.example.com already points to 203.0.113.42
-```
 
 ## Configuration
 
