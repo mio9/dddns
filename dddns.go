@@ -9,22 +9,28 @@ import (
 )
 
 func main() {
-	cli := &cli.Command{
+	command := &cli.Command{
 		Name:  "dddns",
-		Usage: "DDNS for Cloudflare (for now)",
+		Usage: "DDNS for Cloudflare",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "email",
-				Usage: "Cloudflare email",
+				Name:     "config",
+				Aliases:  []string{"c"},
+				Usage:    "Path to YAML config file",
+				Required: true,
 			},
 		},
-		Action: func(c context.Context, cmd *cli.Command) error {
-			fmt.Println("Hello, World!")
-			fmt.Println(cmd.String("email"))
-			return nil
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			config, err := loadConfig(cmd.String("config"))
+			if err != nil {
+				return err
+			}
+			return updateDNS(ctx, config)
 		},
 	}
 
-	cli.Run(context.Background(), os.Args)
-
+	if err := command.Run(context.Background(), os.Args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
