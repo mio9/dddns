@@ -10,6 +10,7 @@ import (
 const defaultIPCheckURL = "https://api.ipify.org"
 
 const ProviderCloudflare = "cloudflare"
+const ProviderNoIP = "no-ip"
 
 type Record struct {
 	ID   string `yaml:"id"`
@@ -20,7 +21,9 @@ type Record struct {
 type Provider struct {
 	Type     string   `yaml:"type"`
 	ZoneID   string   `yaml:"zone_id"`
+	ZoneName string   `yaml:"zone_name"`
 	APIToken string   `yaml:"api_token"`
+	APIKey   string   `yaml:"api_key"`
 	Records  []Record `yaml:"records"`
 }
 
@@ -65,6 +68,8 @@ func validateProvider(provider *Provider, index int) error {
 	switch provider.Type {
 	case ProviderCloudflare:
 		return validateCloudflareProvider(provider, index)
+	case ProviderNoIP:
+		return validateNoIPProvider(provider, index)
 	default:
 		return fmt.Errorf("providers[%d]: unsupported type %q", index, provider.Type)
 	}
@@ -79,6 +84,19 @@ func validateCloudflareProvider(provider *Provider, index int) error {
 	}
 	if provider.APIToken == "" {
 		return fmt.Errorf("providers[%d]: api_token or CLOUDFLARE_API_TOKEN env var is required", index)
+	}
+	return validateRecords(provider.Records, fmt.Sprintf("providers[%d]", index))
+}
+
+func validateNoIPProvider(provider *Provider, index int) error {
+	if provider.ZoneName == "" {
+		return fmt.Errorf("providers[%d]: zone_name is required", index)
+	}
+	if provider.APIKey == "" {
+		provider.APIKey = os.Getenv("NOIP_API_KEY")
+	}
+	if provider.APIKey == "" {
+		return fmt.Errorf("providers[%d]: api_key or NOIP_API_KEY env var is required", index)
 	}
 	return validateRecords(provider.Records, fmt.Sprintf("providers[%d]", index))
 }

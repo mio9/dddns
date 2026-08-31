@@ -10,6 +10,7 @@ Small CLI that keeps DNS records in sync with your current public IP. Useful for
 ## Supported providers
 
 - **Cloudflare** — update existing DNS records via API token
+- **No-IP** — update existing DNS records via the [No-IP REST API](https://developer.noip.com/docs/getting-started-with-the-no-ip-api)
 
 ## Build
 
@@ -67,17 +68,21 @@ providers:
 |-------|----------|-------------|
 | `ip-provider.url` | no | URL that returns your public IP as plain text. Default: `https://api.ipify.org` |
 | `providers` | yes | List of DNS provider configurations |
-| `providers[].type` | yes | Provider name. Supported: `cloudflare` |
+| `providers[].type` | yes | Provider name. Supported: `cloudflare`, `no-ip` |
 | `providers[].zone_id` | yes* | Cloudflare zone ID |
+| `providers[].zone_name` | yes** | No-IP zone name (e.g. `example.com`) |
 | `providers[].api_token` | yes* | Cloudflare API token with DNS edit access |
-| `providers[].records` | yes* | DNS records to update for this provider |
-| `providers[].records[].name` | yes** | Full DNS record name (e.g. `home.example.com`) |
-| `providers[].records[].id` | yes** | Cloudflare DNS record ID (alternative to `name`) |
+| `providers[].api_key` | yes** | No-IP API key with DNS edit access |
+| `providers[].records` | yes* / yes** | DNS records to update for this provider |
+| `providers[].records[].name` | yes*** | DNS record name. Cloudflare: full FQDN. No-IP: FQDN or name relative to `zone_name` |
+| `providers[].records[].id` | yes*** | Cloudflare DNS record ID (alternative to `name`) |
 | `providers[].records[].type` | no | Record type when using `name`. Default: `A`. Use `AAAA` for IPv6 |
 
 \* Required for `cloudflare` providers.
 
-\** Each record needs `id` **or** `name` (with optional `type`). Named records must already exist in the provider.
+\** Required for `no-ip` providers.
+
+\*** Each record needs `id` **or** `name` (with optional `type`). Named records must already exist in the provider.
 
 Public IP is fetched once per run and applied to all configured records across all providers.
 
@@ -102,7 +107,30 @@ export CLOUDFLARE_API_TOKEN="your-token"
 dddns -c config.yaml
 ```
 
-## Scheduling
+### No-IP example
+
+```yaml
+providers:
+  - type: no-ip
+    zone_name: "example.com"
+    # api_key: "your-api-key"  # optional if NOIP_API_KEY is set
+    records:
+      - name: "home.example.com"
+        type: "A"
+      - name: "vpn"              # relative to zone_name
+        type: "A"
+```
+
+Create an API key in the [No-IP dashboard](https://www.noip.com/members/dns/records.php) with permission to edit DNS records in the target zone.
+
+To avoid storing the key in the config file:
+
+```bash
+export NOIP_API_KEY="your-api-key"
+dddns -c config.yaml
+```
+
+### Cloudflare API token
 
 Run `dddns` on a timer so your DNS stays updated when your ISP changes your IP.
 
