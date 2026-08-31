@@ -1,4 +1,12 @@
 #!/usr/bin/env sh
 set -eu
 
-go build -ldflags "-X main.Version=indev-$(git describe --tags --always --dirty)" -o work/dddns .
+if [ "$#" -ne 1 ]; then
+	echo "usage: $0 <version>" >&2
+	exit 1
+fi
+
+version=$1
+
+mkdir -p work
+go build -ldflags "-X main.Version=${version}" -o work/dddns .

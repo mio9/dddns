@@ -1,8 +1,8 @@
 # dddns
 
-DD(どこでも)DDNS = DDDNS
+DD(どこでも)DDNS => DDDNS
 
-Make any integratable DNS service into a Dynamic DNS service.
+Any integratable DNS service as Dynamic DNS service.
 
 
 ## Requirements
@@ -161,5 +161,5 @@ go build -o dddns .
 Or:
 
 ```bash
-./build.sh
+./build.sh v1.0.0
 ```
