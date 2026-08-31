@@ -43,7 +43,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return updater.Update(ctx, cfg)
+			return updater.Update(ctx, cfg, configPath)
 		},
 	}
 

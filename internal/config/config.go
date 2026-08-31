@@ -31,6 +31,9 @@ type Config struct {
 	IPProvider struct {
 		URL string `yaml:"url"`
 	} `yaml:"ip-provider"`
+	IPCache struct {
+		Path string `yaml:"path"`
+	} `yaml:"ip-cache"`
 	Providers []Provider `yaml:"providers"`
 }
 
