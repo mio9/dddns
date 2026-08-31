@@ -1,27 +1,33 @@
 # dddns
 
-Small CLI that keeps DNS records in sync with your current public IP. Useful for home servers, NAS devices, or any host behind a dynamic IP.
+DD(どこでも)DDNS = DDDNS
+
+Make any integratable DNS service into a Dynamic DNS service.
+
 
 ## Requirements
 
 - Go 1.26 or later (to build from source)
 - A supported DNS provider account with records to update
 
-## Supported providers
+## Currently Supported providers
 
-- **Cloudflare** — update existing DNS records via API token
+- **Cloudflare** — update existing DNS records via API token and official Cloudflare Go client.
 - **No-IP** — update existing DNS records via the [No-IP REST API](https://developer.noip.com/docs/getting-started-with-the-no-ip-api)
 
-## Build
+## Installation
+
+### Homebrew
 
 ```bash
-go build -o dddns .
+# Not yet released
+brew install mio9/tap/dddns
 ```
 
-Or:
+### Manual
 
 ```bash
-./build.sh
+curl -LsSf https://github.com/mio9/dddns/releases/latest/download/dddns-linux-amd64.tar.gz | tar -xzf -
 ```
 
 ## Usage
@@ -144,3 +150,16 @@ Example cron entry (every 5 minutes):
 
 - `0` — success (updated or unchanged)
 - `1` — error (config, network, or provider API failure)
+
+
+## Local Development Build
+
+```bash
+go build -o dddns .
+```
+
+Or:
+
+```bash
+./build.sh
+```
