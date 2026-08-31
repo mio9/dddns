@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -24,37 +24,35 @@ type Config struct {
 	} `yaml:"ip"`
 }
 
-func loadConfig(path string) (*Config, error) {
+func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	// Config validation
-
-	if config.Cloudflare.ZoneID == "" {
+	if cfg.Cloudflare.ZoneID == "" {
 		return nil, fmt.Errorf("cloudflare.zone_id is required")
 	}
-	if config.Record.ID == "" && config.Record.Name == "" {
+	if cfg.Record.ID == "" && cfg.Record.Name == "" {
 		return nil, fmt.Errorf("record.id or record.name is required")
 	}
-	if config.Record.Type == "" {
-		config.Record.Type = "A"
+	if cfg.Record.Type == "" {
+		cfg.Record.Type = "A"
 	}
-	if config.Cloudflare.APIToken == "" {
-		config.Cloudflare.APIToken = os.Getenv("CLOUDFLARE_API_TOKEN")
+	if cfg.Cloudflare.APIToken == "" {
+		cfg.Cloudflare.APIToken = os.Getenv("CLOUDFLARE_API_TOKEN")
 	}
-	if config.Cloudflare.APIToken == "" {
+	if cfg.Cloudflare.APIToken == "" {
 		return nil, fmt.Errorf("cloudflare.api_token or CLOUDFLARE_API_TOKEN env var is required")
 	}
-	if config.IP.URL == "" {
-		config.IP.URL = defaultIPCheckURL
+	if cfg.IP.URL == "" {
+		cfg.IP.URL = defaultIPCheckURL
 	}
 
-	return &config, nil
+	return &cfg, nil
 }
