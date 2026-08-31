@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 
 	"mio9/dddns/internal/config"
 	"mio9/dddns/internal/updater"
@@ -31,7 +32,7 @@ func main() {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if cmd.Bool("version") {
-				fmt.Println(Version)
+				fmt.Printf("%s %s/%s\n", Version, runtime.GOOS, runtime.GOARCH)
 				return nil
 			}
 			configPath := cmd.String("config")
