@@ -5,7 +5,7 @@
 
 DD(どこでも)DDNS => DDDNS
 
-Any integratable DNS service as Dynamic DNS service.
+Any integratable DNS service as Dynamic DNS service. Why questionable dynamic DNS providers if we can do cloudflare? 🤷‍♀️
 
 
 ## Requirements
