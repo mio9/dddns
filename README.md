@@ -50,6 +50,8 @@ dddns -c /path/to/config.yaml
 Create a YAML file and pass it with `--config` / `-c`.
 
 ```yaml
+update-interval: "5m"  # optional; blocking timer mode when set
+
 ip-provider:
   url: "https://api.ipify.org"  # optional
 
@@ -67,6 +69,7 @@ providers:
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `update-interval` | no | Periodic update interval (e.g. `30s`, `5m`, `1h`, `1h30m`). When set, dddns runs as a blocking process until stopped with Ctrl+C or SIGTERM |
 | `ip-provider.url` | no | URL that returns your public IP as plain text. Default: `https://api.ipify.org` |
 | `providers` | yes | List of DNS provider configurations |
 | `providers[].type` | yes | Provider name. Supported: `cloudflare`, `no-ip` |
@@ -85,7 +88,22 @@ providers:
 
 \*** Each record needs `id` **or** `name` (with optional `type`). Named records must already exist in the provider.
 
-Public IP is fetched once per run and applied to all configured records across all providers.
+Public IP is fetched once per update cycle and applied to all configured records across all providers. When the public IP matches the local cache from the last successful sync, DNS providers are not contacted.
+
+### Timer mode
+
+Set `update-interval` to run dddns as a long-lived process instead of a one-shot cron job:
+
+```yaml
+update-interval: "5m"
+```
+
+- Runs the first update immediately on start
+- Repeats every configured interval
+- Logs update errors to stderr and keeps running
+- Stop with Ctrl+C or SIGTERM (exit code 0)
+
+Supported units match Go duration syntax: `s`, `m`, `h`, and combinations such as `1h30m`.
 
 ### Example with record ID
 
@@ -131,11 +149,17 @@ export NOIP_API_KEY="your-api-key"
 dddns -c config.yaml
 ```
 
-### Cloudflare API token
+## Scheduling
 
 Run `dddns` on a timer so your DNS stays updated when your ISP changes your IP.
 
-Example cron entry (every 5 minutes):
+**Timer mode (recommended for a single host):** set `update-interval` in the config and run dddns in the foreground or under a process supervisor:
+
+```yaml
+update-interval: "5m"
+```
+
+**Cron:** for one-shot mode, omit `update-interval` and schedule with cron:
 
 ```cron
 */5 * * * * /usr/local/bin/dddns -c /etc/dddns/config.yaml >> /var/log/dddns.log 2>&1
@@ -143,8 +167,8 @@ Example cron entry (every 5 minutes):
 
 ## Exit codes
 
-- `0` — success (updated or unchanged)
-- `1` — error (config, network, or provider API failure)
+- `0` — success (updated or unchanged), or timer mode stopped by signal
+- `1` — error in one-shot mode (config, network, or provider API failure)
 
 
 ## Local Development Build

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -28,7 +29,19 @@ type Provider struct {
 }
 
 type Config struct {
-	IPProvider struct {
+	UpdateInterval time.Duration
+	IPProvider     struct {
+		URL string `yaml:"url"`
+	} `yaml:"ip-provider"`
+	IPCache struct {
+		Path string `yaml:"path"`
+	} `yaml:"ip-cache"`
+	Providers []Provider `yaml:"providers"`
+}
+
+type fileConfig struct {
+	UpdateInterval string `yaml:"update-interval"`
+	IPProvider     struct {
 		URL string `yaml:"url"`
 	} `yaml:"ip-provider"`
 	IPCache struct {
@@ -43,9 +56,25 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	var fileCfg fileConfig
+	if err := yaml.Unmarshal(data, &fileCfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	cfg := Config{
+		IPProvider: fileCfg.IPProvider,
+		IPCache:    fileCfg.IPCache,
+		Providers:  fileCfg.Providers,
+	}
+	if fileCfg.UpdateInterval != "" {
+		interval, err := time.ParseDuration(fileCfg.UpdateInterval)
+		if err != nil {
+			return nil, fmt.Errorf("parse update-interval: %w", err)
+		}
+		if interval <= 0 {
+			return nil, fmt.Errorf("update-interval must be greater than zero")
+		}
+		cfg.UpdateInterval = interval
 	}
 
 	if len(cfg.Providers) == 0 {
