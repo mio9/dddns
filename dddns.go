@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"mio9/dddns/internal/config"
@@ -11,6 +12,28 @@ import (
 
 	"github.com/urfave/cli/v3"
 )
+
+var defaultConfigNames = []string{"dddns.yaml", "dddns.yml"}
+
+func resolveConfigPath(flagPath string) (string, error) {
+	if flagPath != "" {
+		return flagPath, nil
+	}
+
+	workDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("resolve config path: %w", err)
+	}
+
+	for _, name := range defaultConfigNames {
+		candidate := filepath.Join(workDir, name)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+
+	return "", fmt.Errorf("config file not found: pass --config or create dddns.yaml or dddns.yml in %s", workDir)
+}
 
 var Version string = "indev"
 
@@ -22,7 +45,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "config",
 				Aliases: []string{"c"},
-				Usage:   "Path to YAML config file",
+				Usage:   "Path to YAML config file (default: dddns.yaml or dddns.yml in current directory)",
 			},
 			&cli.BoolFlag{
 				Name:    "version",
@@ -35,9 +58,9 @@ func main() {
 				fmt.Printf("%s %s/%s\n", Version, runtime.GOOS, runtime.GOARCH)
 				return nil
 			}
-			configPath := cmd.String("config")
-			if configPath == "" {
-				return fmt.Errorf("config is required")
+			configPath, err := resolveConfigPath(cmd.String("config"))
+			if err != nil {
+				return err
 			}
 			cfg, err := config.Load(configPath)
 			if err != nil {

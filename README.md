@@ -39,15 +39,19 @@ sudo mv dddns /usr/local/bin/ # Optional, if you want to install it globally, mo
 ## Usage
 
 ```bash
+dddns
+# or
 dddns --config /path/to/config.yaml
 # or
 dddns -c /path/to/config.yaml
 ```
 
+If `--config` is omitted, dddns looks for `dddns.yaml`/`dddns.yml` in the current working directory.
+
 
 ## Configuration
 
-Create a YAML file and pass it with `--config` / `-c`.
+Create a YAML config file named `dddns.yaml` or `dddns.yml` in your working directory, or pass a path with `--config` / `-c`.
 
 ```yaml
 update-interval: "5m"  # optional; blocking timer mode when set
