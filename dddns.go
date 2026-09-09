@@ -91,8 +91,8 @@ func main() {
 				},
 			},
 			{
-				Name:      "fetch",
-				Usage:     "Fetch A records matching current public IP from a provider into config",
+				Name:  "fetch",
+				Usage: "Fetch A records matching current public IP from a provider into config",
 				Arguments: []cli.Argument{
 					&cli.StringArg{
 						Name:      "provider",
@@ -110,7 +110,7 @@ func main() {
 					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					providerType := cmd.Args().First()
+					providerType := cmd.StringArg("provider")
 					if providerType == "" {
 						return fmt.Errorf("provider is required")
 					}
