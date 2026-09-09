@@ -34,6 +34,19 @@ type rrSetResponse struct {
 	Data RRSet `json:"data"`
 }
 
+type dnsName struct {
+	Name string `json:"name"`
+}
+
+type listNamesResponse struct {
+	Data []dnsName `json:"data"`
+	Page struct {
+		Offset int64 `json:"offset"`
+		Limit  int64 `json:"limit"`
+		Total  int64 `json:"total"`
+	} `json:"page"`
+}
+
 type errorBody struct {
 	Errors []struct {
 		Code   string `json:"code"`
@@ -64,6 +77,37 @@ func (client *Client) GetRRSet(ctx context.Context, zoneName, name, dnsType stri
 func (client *Client) ReplaceRdata(ctx context.Context, zoneName, name, dnsType string, rdata []Rdata) error {
 	requestPath := client.recordPath(zoneName, name, dnsType) + "/rdata"
 	return client.do(ctx, http.MethodPut, requestPath, rdata, nil)
+}
+
+func (client *Client) ListNamesInZone(ctx context.Context, zoneName string) ([]string, error) {
+	var names []string
+	offset := int64(0)
+	limit := int64(100)
+
+	for {
+		requestPath := fmt.Sprintf(
+			"/dns/records/%s?offset=%d&limit=%d",
+			url.PathEscape(zoneName),
+			offset,
+			limit,
+		)
+
+		var response listNamesResponse
+		if err := client.do(ctx, http.MethodGet, requestPath, nil, &response); err != nil {
+			return nil, fmt.Errorf("list DNS names in zone %q: %w", zoneName, err)
+		}
+
+		for _, item := range response.Data {
+			names = append(names, item.Name)
+		}
+
+		if int64(len(response.Data)) == 0 || offset+int64(len(response.Data)) >= response.Page.Total {
+			break
+		}
+		offset += int64(len(response.Data))
+	}
+
+	return names, nil
 }
 
 func (client *Client) recordPath(zoneName, name, dnsType string) string {

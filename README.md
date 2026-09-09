@@ -39,14 +39,33 @@ sudo mv dddns /usr/local/bin/ # Optional, if you want to install it globally, mo
 ## Usage
 
 ```bash
-dddns
+dddns start
 # or
-dddns --config /path/to/config.yaml
+dddns start --config /path/to/config.yaml
 # or
-dddns -c /path/to/config.yaml
+dddns start -c /path/to/config.yaml
 ```
 
-If `--config` is omitted, dddns looks for `dddns.yaml`/`dddns.yml` in the current working directory.
+If `--config` is omitted, `dddns start` looks for `dddns.yaml`/`dddns.yml` in the current working directory.
+
+Running `dddns` without a subcommand shows help. Use `dddns start` to run updates (one-shot or timer mode from config).
+
+### Fetch records from a provider
+
+Discover existing **A** records that match your current public IP and merge them into the config:
+
+```bash
+dddns fetch cloudflare --zone-id YOUR_ZONE_ID
+dddns fetch no-ip --zone-name example.com
+```
+
+Credentials resolve in this order:
+
+1. Existing provider block in the config file (if present)
+2. Fetch flags (`--zone-id`, `--zone-name`)
+3. Environment variables (`CLOUDFLARE_API_TOKEN`, `NOIP_API_KEY`)
+
+If the config file does not exist, `fetch` creates `dddns.yaml` in the current directory when writing results. For an existing provider, only `records[]` is replaced; other provider fields and top-level settings are preserved. If the provider is missing, a new provider block is appended.
 
 
 ## Configuration
@@ -127,7 +146,7 @@ To avoid storing the token in the config file:
 
 ```bash
 export CLOUDFLARE_API_TOKEN="your-token"
-dddns -c config.yaml
+dddns start -c config.yaml
 ```
 
 ### No-IP example
@@ -150,12 +169,12 @@ To avoid storing the key in the config file:
 
 ```bash
 export NOIP_API_KEY="your-api-key"
-dddns -c config.yaml
+dddns start -c config.yaml
 ```
 
 ## Scheduling
 
-Run `dddns` on a timer so your DNS stays updated when your ISP changes your IP.
+Run `dddns start` on a timer so your DNS stays updated when your ISP changes your IP.
 
 **Timer mode (recommended for a single host):** set `update-interval` in the config and run dddns in the foreground or under a process supervisor:
 
@@ -166,7 +185,7 @@ update-interval: "5m"
 **Cron:** for one-shot mode, omit `update-interval` and schedule with cron:
 
 ```cron
-*/5 * * * * /usr/local/bin/dddns -c /etc/dddns/config.yaml >> /var/log/dddns.log 2>&1
+*/5 * * * * /usr/local/bin/dddns start -c /etc/dddns/config.yaml >> /var/log/dddns.log 2>&1
 ```
 
 ## Exit codes

@@ -13,12 +13,27 @@ type Updater interface {
 	Update(ctx context.Context, publicIP string) error
 }
 
+type Fetcher interface {
+	FetchMatchingARecords(ctx context.Context, publicIP string) ([]config.Record, error)
+}
+
 func New(cfg config.Provider) (Updater, error) {
 	switch cfg.Type {
 	case config.ProviderCloudflare:
 		return cloudflare.New(cfg)
 	case config.ProviderNoIP:
 		return noipprovider.New(cfg)
+	default:
+		return nil, fmt.Errorf("unsupported provider type %q", cfg.Type)
+	}
+}
+
+func NewFetcher(cfg config.Provider) (Fetcher, error) {
+	switch cfg.Type {
+	case config.ProviderCloudflare:
+		return cloudflare.NewFetcher(cfg)
+	case config.ProviderNoIP:
+		return noipprovider.NewFetcher(cfg)
 	default:
 		return nil, fmt.Errorf("unsupported provider type %q", cfg.Type)
 	}
