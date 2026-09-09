@@ -30,8 +30,11 @@ brew install mio9/tap/dddns
 
 ### Manual
 
+Release archives are named `dddns_<version>_<os>_<arch>.tar.gz` (for example, `dddns_v1.0.0_linux_amd64.tar.gz`). Pick the file for your platform from the [releases page](https://github.com/mio9/dddns/releases), or download a specific version:
+
 ```bash
-curl -fSL https://github.com/mio9/dddns/releases/latest/download/dddns-linux-amd64.tar.gz | tar -xzf -
+VERSION=v1.0.0
+curl -fSL "https://github.com/mio9/dddns/releases/download/${VERSION}/dddns_${VERSION}_linux_amd64.tar.gz" | tar -xzf -
 chmod +x dddns
 sudo mv dddns /usr/local/bin/ # Optional, if you want to install it globally, move to $PATH instead if you wanted to
 ```
