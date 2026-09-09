@@ -99,7 +99,6 @@ func MergeProviderRecords(path, providerType string, providerFields Provider, re
 	}
 
 	providerFields.Type = providerType
-	providerFields.Records = records
 	original := findProviderByType(fileCfg.Providers, providerType)
 
 	index := findProviderIndexByType(fileCfg.Providers, providerType)
@@ -109,8 +108,10 @@ func MergeProviderRecords(path, providerType string, providerFields Provider, re
 		providerFields.ZoneName = firstNonEmpty(providerFields.ZoneName, existing.ZoneName)
 		providerFields.APIToken = firstNonEmpty(providerFields.APIToken, existing.APIToken)
 		providerFields.APIKey = firstNonEmpty(providerFields.APIKey, existing.APIKey)
+		providerFields.Records = mergeRecords(existing.Records, records)
 		fileCfg.Providers[index] = providerFields
 	} else {
+		providerFields.Records = records
 		fileCfg.Providers = append(fileCfg.Providers, providerFields)
 	}
 

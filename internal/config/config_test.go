@@ -153,7 +153,7 @@ func TestMergeProviderRecordsCreateNewFile(t *testing.T) {
 	}
 }
 
-func TestMergeProviderRecordsReplaceRecordsPreserveFields(t *testing.T) {
+func TestMergeProviderRecordsAppendRecordsPreserveFields(t *testing.T) {
 	configPath := writeConfig(t, `
 update-interval: "5m"
 ip-provider:
@@ -191,6 +191,7 @@ providers:
 	for _, want := range []string{
 		`update-interval: 5m`,
 		"https://example.com/ip",
+		"old.example.com",
 		"new.example.com",
 		"new-id",
 		"type: no-ip",
@@ -200,8 +201,39 @@ providers:
 			t.Fatalf("config missing %q:\n%s", want, contents)
 		}
 	}
-	if strings.Contains(contents, "old.example.com") {
-		t.Fatalf("old records should be replaced:\n%s", contents)
+}
+
+func TestMergeProviderRecordsUpdatesExistingRecord(t *testing.T) {
+	configPath := writeConfig(t, `
+providers:
+  - type: cloudflare
+    zone_id: "zone-id"
+    api_token: "token"
+    records:
+      - name: "home.example.com"
+        type: "A"
+        id: "old-id"
+`)
+
+	err := config.MergeProviderRecords(configPath, config.ProviderCloudflare, config.Provider{
+		ZoneID: "zone-id",
+	}, []config.Record{
+		{Name: "home.example.com", Type: "A", ID: "new-id"},
+	})
+	if err != nil {
+		t.Fatalf("MergeProviderRecords: %v", err)
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	contents := string(data)
+	if !strings.Contains(contents, "new-id") {
+		t.Fatalf("record id should be updated:\n%s", contents)
+	}
+	if strings.Count(contents, "home.example.com") != 1 {
+		t.Fatalf("record should not be duplicated:\n%s", contents)
 	}
 }
 

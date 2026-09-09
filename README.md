@@ -68,7 +68,7 @@ Credentials resolve in this order:
 2. Fetch flags (`--zone-id`, `--zone-name`)
 3. Environment variables (`CLOUDFLARE_API_TOKEN`, `NOIP_API_KEY`)
 
-If the config file does not exist, `fetch` creates `dddns.yaml` in the current directory when writing results. For an existing provider, only `records[]` is replaced; other provider fields and top-level settings are preserved. If the provider is missing, a new provider block is appended.
+If the config file does not exist, `fetch` creates `dddns.yaml` in the current directory when writing results. For an existing provider, fetched records are appended to `records[]` (matching records by ID or name are updated in place); other provider fields and top-level settings are preserved. If the provider is missing, a new provider block is appended.
 
 
 ## Configuration
